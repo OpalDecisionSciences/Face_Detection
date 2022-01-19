@@ -1,0 +1,81 @@
+
+# Facial Recognition
+# Cascades come from open cv github repository
+# https://github.com/opencv/opencv/tree/master/data/haarcascades
+"""
+Created on Sun Jan 16 17:13:13 2022
+@author: jeanninejordan
+Deep Learning & Computer Vision with Hadelin de Ponteves & Kirill Eremenko at Super Data Science
+Udemy.com
+"""
+
+# Import Libraries
+import cv2  # open cv deep series of filters; not based on layers, does not require torch or tf
+
+
+# Load Cascade XMLs
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
+
+##############################################################################
+# To save computation, increase efficiency, do the eye cascade within the face
+##############################################################################
+
+# Define Detection Function
+# cascades are applied on black and white images, so we get the b/w version of each image
+# This function takes images, cannot input the video directly
+def detect(gray, frame):
+    # get 4 coordinates of rectangle that will recognize the face, x, y, w, h
+    # x & Y = coordinates of the rectangle, w = width rectangle, h = height rectangle
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5) # color, scale reduce or increase images, neighbors
+    for (x, y, w, h) in faces:
+        # draw the rectangle on the frame: 5 parameters below
+        # 1 - image to draw rectangle, 
+        # 2 - coordinates upper left corner, 
+        # 3 - coordinates lower right corner of rectangle,
+        # 4 - color of rectangle = blue
+        # 5 - thickness of edges of rectangle
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        
+        # get two regions of interest (roi) in the referential of the face
+        # one for the b/w image (gray) in which the cascade is going to be applied to detect the eyes
+        # one region of interest for the original colored image (frame)  b/c we will draw the 
+        # rectangles in the original colored image
+        roi_gray = gray[y:y+h, x:x+w]
+        
+        # This is just a subzone of the frame for the eyes on the color frame
+        roi_color = frame[y:y+h, x:x+w]
+        # get 4 coordinates of rectangle that will recognize the eyes, x, y, w, h
+        # x & Y = upper left corner, w = width rectangle, h = height rectangle
+        eyes = eye_cascade.detectMultiScale(roi_gray, 1.1, 3)
+        for (ex, ey, ew, eh) in eyes:
+            # draw the rectangles around the eyes on the color frame
+            cv2.rectangle(roi_color, (ex, ey), (ex+ew, ey+eh), (0, 255, 0), 2)
+    return frame
+
+# Apply the Detect Function with the webcam; Doing Facial Recognition
+video_capture = cv2.VideoCapture(0) # 0 = webcam of computer, 1 = webcam of external device
+
+while True:
+    # Get the last frame coming from the webcam object by read method
+    # read method returns 2 elements, we only want the second one (last frame from webcam)
+    _, frame = video_capture.read()
+    # turn frame to gray scale
+    # transformation to original color image, convert to gray
+    # COLOR_BGR2GRAY does avg of blue, green, red to obtain scale of grey, 
+    # and get the right contrast of b/w, a trick to obtain the right shades of gray
+    if _ is True:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    else:
+        continue
+    # get results of detect function applied to our frame captured by webcam
+    canvas = detect(gray, frame)
+    # display in an animated way, successive processed output images in a window, as a stream
+    cv2.imshow('Video', canvas)
+    # type q on keyboard to break the infinite loop and stop the program
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+# turn off webcam
+video_capture.release()
+# delete display window
+cv2.destroyAllWindows()
